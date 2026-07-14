@@ -1,0 +1,55 @@
+name: Build APK
+
+# Roda automaticamente sempre que você enviar (push) código para o
+# branch "main", ou manualmente pela aba "Actions" do GitHub
+# (botão "Run workflow").
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build APK de debug (pronto para instalar no celular)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Java (necessário para o Gradle/Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Instalar o Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Verificar instalação (flutter doctor)
+        run: flutter doctor -v
+
+      - name: Baixar dependências do projeto
+        run: flutter pub get
+
+      - name: Buildar o APK (debug — instala e testa direto, sem precisar assinar)
+        run: flutter build apk --debug
+
+      - name: Buildar também o APK release (mais otimizado/rápido, assinado com chave de debug)
+        run: flutter build apk --release
+
+      # Deixa os APKs prontos para download na aba "Actions" do GitHub,
+      # dentro da execução, em "Artifacts".
+      - name: Disponibilizar APK de debug para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Disponibilizar APK de release para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
